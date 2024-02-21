@@ -9,6 +9,22 @@ import argparse
 
 
 
+def stack_images(img1, img2, img3, img4):
+    # Resize images to have the same dimensions (optional)
+    # This assumes that all images have the same size
+    img1 = cv2.resize(img1, (0,0), fx=0.5, fy=0.5)
+    img2 = cv2.resize(img2, (0,0), fx=0.5, fy=0.5)
+    img3 = cv2.resize(img3, (0,0), fx=0.5, fy=0.5)
+    img4 = cv2.resize(img4, (0,0), fx=0.5, fy=0.5)
+
+    # Stack images in a 2x2 matrix
+    top_row = np.hstack((img1, img2))
+    bottom_row = np.hstack((img3, img4))
+    result_img = np.vstack((top_row, bottom_row))
+
+    return result_img
+
+
 def resize(image):
     height, width = image.shape[:2]
     max_dimension = max(height, width)
@@ -96,7 +112,7 @@ def recombine_chunks(chunks, original_shape):
 def compare_images_with_bg_subtraction(image1, image2,output_image):
     chunks1 = divide_image(image1)
     chunks2 = divide_image(image2)
-
+    master_image_copy = cv2.bitwise_and(image1,image2)
     num_threads = os.cpu_count()  # You might want to multiply this by a factor if tasks are I/O bound
     print(num_threads)
     processed_chunks = [None] * len(chunks1)  # Pre-allocate space for processed chunks
@@ -108,7 +124,8 @@ def compare_images_with_bg_subtraction(image1, image2,output_image):
             processed_chunks[index] = processed_chunk
 
     master_image = recombine_chunks(processed_chunks, image1.shape)
-
+    stacked_image = stack_images(master_image_copy,image1,image2,master_image)
+    cv2.imwrite("output/stacked_image.jpg",stacked_image)
     cv2.imwrite(output_image, master_image)
     plt.figure(figsize=(10,10))
     plt.imshow(cv2.cvtColor(master_image, cv2.COLOR_BGR2RGB))
